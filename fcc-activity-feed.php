@@ -72,48 +72,45 @@ class recentpostsshortcode {
 
 		$html = '';
 
-		/***  Post-Indexer Specific Loop Starts Here ***/
-
-		//global $network_query, $network_post;
-
-		//$network_query = network_query_posts( array( 'post_type' => $posttype, 'posts_per_page' => $tmp_number ));
-
-		//if( network_have_posts() ) {
+		/***  JSON Loop Starts Here ***/
 			$html .= $tmp_global_before; # Keep
 			$default_avatar = get_option('default_avatar');
+			#JSON
+			$response = file_get_contents('http://avsearch.fccinteractive.com:8080/solr/select?indent=on&version=2.2&q=*%3A*&fq=blogid%3A%5B2+TO+*%5D&fq=publishtime%3A%5BNOW-7DAY+TO+NOW%5D&start=0&rows=1000&fl=id%2C+permalink%2C+blogid%2C+title%2C+author%2C+type%2C+publishtime%2C+categories&qt=&wt=json&sort=publishtime+desc&omitHeader=true');
+			$response = json_decode($response, true);
+			$docs = $response['response']['docs'];
 
-			//while( network_have_posts()) {
-				//network_the_post();
+			for($i = 0; $i < count($docs); $i++){
+
+				$obj = $docs[$i];
 
 				$html .= $tmp_before; # Keep
 				if ( $tmp_title_characters > 0 ) {
 					$html .= $tmp_title_before; # Keep
-					if ( $tmp_show_avatars == 'yes' ) {
-						//$the_author = network_get_the_author_id();
-						$the_author = '1';
-						//$the_author_name = network_get_the_author();
-						$the_author_name = 'Author Name';
-						////$html .= get_avatar( $the_author, $tmp_avatar_size, $default_avatar) . ' '; # Keep Commented Out
-					}
 
-					//$the_title = network_get_the_title();
-					$the_title = 'The Title';
+					#Article Title
+					$feed_title =$obj['title'];
+					#Article ID
+					$feed_id = preg_replace('/[^0-9]/','',$obj['id']);
+					#Article Blog ID
+					$feed_blogid = $obj['blogid'];
+					#Article Permalink
+					$feed_permalink = $obj['permalink'];
+					#Article Author
+					$feed_author = $obj['author'];
+					#Article Type
+					$feed_type = $obj['type'];
+					#Article Publish Time
+					$feed_publishtime = $obj['publishtime'];
+					#Article Category
+					$feed_category = $obj['categories'][0];
+					#Article Time
+					$post_time = gmdate( 'm/d/Y g:i a', $feed_publishtime);
 
-					# Article Permalink
-					$permalink = '#';
-
-					//$the_id = network_get_the_id();  //Post ID
-					$the_id = 'Post ID';
-
-					//$post_time = gmdate( 'm/d/Y g:i a', network_get_post_time() );
-					$post_time = date('m/d/Y g:i a');
-
-					//$category = network_get_post_category();
-					$category = 'Category';
-
-					//$featured_image = network_get_the_featured_image();
-					$featured_image = ACTFEED__PLUGIN_DIR . 'placeholder.jpeg';
-					//$featured_image_url = network_get_the_featured_image_with_url();
+					switch_to_blog( $feed_blogid );
+					$featured_image = get_the_post_thumbnail( $feed_id, 'small-thumb' );
+					restore_current_blog();
+					// $featured_image = ACTFEED__PLUGIN_DIR . 'placeholder.jpeg';
 					$featured_image_url = '<img src="' . $featured_image . '">';
 
 
@@ -124,18 +121,18 @@ class recentpostsshortcode {
 
 					# Title & Author
 					if ( $tmp_title_link == 'no' ) {
-						$html .= substr($the_title,0,$tmp_title_characters);
+						$html .= substr($feed_title,0,$tmp_title_characters);
 					}
 					else {
 						$html .= '<div class="sidebar-list-text left relative">';
-						$html .= '<a href="' . $permalink . '" target="_blank">' . substr($the_title,0,$tmp_title_characters) . '</a>';
+						$html .= '<a href="' . $permalink . '" target="_blank">' . substr($feed_title,0,$tmp_title_characters) . '</a>';
 					}
 
 					# Category & Post Time
 					$html .= '<div class="widget-post-info left">';
-					$html .= '<span class="widget-post-cat">' . $category . '</span>';
+					$html .= '<span class="widget-post-cat">' . $feed_category . '</span>';
 					$html .= '<span class="widget-post-date">' . $post_time . '</span>';
-					$html .= '<span class="widget-post-date">' . '<strong>' .  $the_author_name . '</strong></span>';
+					$html .= '<span class="widget-post-date">' . '<strong>' .  $feed_author . '</strong></span>';
 					$html .= '</div></div><br>';
 
 					$html .= $tmp_title_after;
@@ -151,10 +148,8 @@ class recentpostsshortcode {
 				$html .= $tmp_title_content_divider;
 
 				$html .= $tmp_after;
-			//}
 			$html .= $tmp_global_after;
-			//$html .= '<script type="text/javascript">' . 'jQuery(document).ready(function(){jQuery("img").parent("a").addClass("thickbox")});' . '</script>';
-		//}
+		}
 
 		if($output) {
 			echo $html;
