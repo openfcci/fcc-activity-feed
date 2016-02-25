@@ -10,14 +10,14 @@ Author URI: http://forumcomm.com/
 
 define( 'ACTFEED__PLUGIN_DIR',  plugin_dir_url( __FILE__ ) );
 
-function fcc_add_thickbox() {
+function solr_add_thickbox() {
 	if ( ! is_admin() ) {
 		add_thickbox();
 	} else {
 		//Admin
 	}
 }
-//add_action('wp_head', 'fcc_add_thickbox');
+//add_action('wp_head', 'solr_add_thickbox');
 
 /* NOTES
 * An alternative to adding the thickbox HTML around all links with the WordPress
@@ -34,12 +34,12 @@ function fcc_add_thickbox() {
 
 /*
 Usage:
-display_recent_posts(NUMBER,TITLE_CHARACTERS,CONTENT_CHARACTERS,TITLE_CONTENT_DIVIDER,TITLE_BEFORE,TITLE_AFTER,GLOBAL_BEFORE,GLOBAL_AFTER,BEFORE,AFTER,TITLE_LINK,SHOW_AVATARS,AVATAR_SIZE,POSTTYPE, ECHO);
+solr_display_recent_posts(NUMBER,TITLE_CHARACTERS,CONTENT_CHARACTERS,TITLE_CONTENT_DIVIDER,TITLE_BEFORE,TITLE_AFTER,GLOBAL_BEFORE,GLOBAL_AFTER,BEFORE,AFTER,TITLE_LINK,SHOW_AVATARS,AVATAR_SIZE,POSTTYPE, ECHO);
 
 Ex:
-display_recent_posts(10,40,150,'<br />','<strong>','</strong>','<ul>','</ul>','<li>','</li>','yes','yes',16, 'post', true);
+solr_display_recent_posts(10,40,150,'<br />','<strong>','</strong>','<ul>','</ul>','<li>','</li>','yes','yes',16, 'post', true);
 */
-class recentpostsshortcode {
+class solractivityfeedshortcode {
 
 	var $build = 1;
 
@@ -53,22 +53,22 @@ class recentpostsshortcode {
 
 		if($this->db->blogid == 1) {
 			// Only add the feed for the main site
-			add_action('init', array(&$this, 'initialise_recentpostsshortcode') );
+			add_action('init', array(&$this, 'initialise_solractivityfeedshortcode') );
 		}
 
-		add_shortcode( 'globalrecentposts', array( &$this, 'display_recent_posts_shortcode') );
+		add_shortcode( 'solrrecentposts', array( &$this, 'solr_display_recent_posts_shortcode') );
 
 	}
 
-	function recentpostsshortcode() {
+	function solractivityfeedshortcode() {
 		$this->__construct();
 	}
 
-	function initialise_recentpostsshortcode() {
+	function initialise_solractivityfeedshortcode() {
 		// In case we need it in future :)
 	}
 
-	function display_recent_posts($tmp_number,$tmp_title_characters = 0,$tmp_content_characters = 0,$tmp_title_content_divider = '<br />',$tmp_title_before,$tmp_title_after,$tmp_global_before,$tmp_global_after,$tmp_before,$tmp_after,$tmp_title_link = 'no',$tmp_show_avatars = 'yes', $tmp_avatar_size = 16, $posttype = 'post', $output = true) {
+	function solr_display_recent_posts($tmp_number,$tmp_title_characters = 0,$tmp_content_characters = 0,$tmp_title_content_divider = '<br />',$tmp_title_before,$tmp_title_after,$tmp_global_before,$tmp_global_after,$tmp_before,$tmp_after,$tmp_title_link = 'no',$tmp_show_avatars = 'yes', $tmp_avatar_size = 16, $posttype = 'post', $output = true) {
 
 		$html = '';
 
@@ -107,16 +107,20 @@ class recentpostsshortcode {
 					#Article Time
 					$post_time = gmdate( 'm/d/Y g:i a', $feed_publishtime);
 
-					switch_to_blog( $feed_blogid );
+					# Featured Imaged
+					$featured_image = NULL;
+					/*switch_to_blog( $feed_blogid );
 					$featured_image = get_the_post_thumbnail( $feed_id, 'small-thumb' );
-					restore_current_blog();
-					// $featured_image = ACTFEED__PLUGIN_DIR . 'placeholder.jpeg';
+					restore_current_blog();*/
+					$placeholder_image = ACTFEED__PLUGIN_DIR . 'placeholder.jpeg';
 					$featured_image_url = '<img src="' . $featured_image . '">';
 
 
 					# Display Featured Image Thumbnail if available
 					if ( $featured_image ) {
 						$html .= '<div class="sidebar-list-img left relative">' . $featured_image_url . '</div>';
+					} else {
+						$html .= '<div class="sidebar-list-img left relative">' . $placeholder_image . '</div>';
 					}
 
 					# Title & Author
@@ -148,8 +152,9 @@ class recentpostsshortcode {
 				$html .= $tmp_title_content_divider;
 
 				$html .= $tmp_after;
+			}
 			$html .= $tmp_global_after;
-		}
+
 
 		if($output) {
 			echo $html;
@@ -159,7 +164,7 @@ class recentpostsshortcode {
 
 	}
 
-	function display_recent_posts_shortcode($atts, $content = null, $code = "") {
+	function solr_display_recent_posts_shortcode($atts, $content = null, $code = "") {
 
 		$defaults = array(	'number'	=>	5,
 							'title_characters' => 250,
@@ -181,7 +186,7 @@ class recentpostsshortcode {
 
 		$html = '';
 
-		$html .= $this->display_recent_posts( $number, $title_characters, $content_characters, $title_content_divider, $title_before, $title_after, $global_before, $global_after, $before, $after, $title_link, $show_avatars, $avatar_size, $posttype, false);
+		$html .= $this->solr_display_recent_posts( $number, $title_characters, $content_characters, $title_content_divider, $title_before, $title_after, $global_before, $global_after, $before, $after, $title_link, $show_avatars, $avatar_size, $posttype, false);
 
 		return $html;
 
@@ -189,10 +194,10 @@ class recentpostsshortcode {
 
 }
 
-function display_recent_posts($tmp_number,$tmp_title_characters = 0,$tmp_content_characters = 0,$tmp_title_content_divider = '<br />',$tmp_title_before,$tmp_title_after,$tmp_global_before,$tmp_global_after,$tmp_before,$tmp_after,$tmp_title_link = 'no',$tmp_show_avatars = 'yes', $tmp_avatar_size = 16, $posttype = 'post', $output = true) {
-	global $recentpostsshortcode;
+function solr_display_recent_posts($tmp_number,$tmp_title_characters = 0,$tmp_content_characters = 0,$tmp_title_content_divider = '<br />',$tmp_title_before,$tmp_title_after,$tmp_global_before,$tmp_global_after,$tmp_before,$tmp_after,$tmp_title_link = 'no',$tmp_show_avatars = 'yes', $tmp_avatar_size = 16, $posttype = 'post', $output = true) {
+	global $solractivityfeedshortcode;
 
-	$recentpostsshortcode->display_recent_posts( $tmp_number, $tmp_title_characters, $tmp_content_characters, $tmp_title_content_divider, $tmp_title_before, $tmp_title_after, $tmp_global_before, $tmp_global_after, $tmp_before, $tmp_after, $tmp_title_link, $tmp_show_avatars, $tmp_avatar_size, $posttype, $output );
+	$solractivityfeedshortcode->solr_display_recent_posts( $tmp_number, $tmp_title_characters, $tmp_content_characters, $tmp_title_content_divider, $tmp_title_before, $tmp_title_after, $tmp_global_before, $tmp_global_after, $tmp_before, $tmp_after, $tmp_title_link, $tmp_show_avatars, $tmp_avatar_size, $posttype, $output );
 }
 
-$recentpostsshortcode = new recentpostsshortcode();
+$solractivityfeedshortcode = new solractivityfeedshortcode();
