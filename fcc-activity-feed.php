@@ -4,7 +4,7 @@ Plugin Name: FCC Activity Feed
 Plugin URI:
 Description: Global Recent posts function and shortcode
 Author: Forum Communications Company
-Version: 0.16.02.25
+Version: 0.16.02.26.2
 Author URI: http://forumcomm.com/
 */
 
@@ -17,20 +17,20 @@ function solr_add_thickbox() {
 		//Admin
 	}
 }
-//add_action('wp_head', 'solr_add_thickbox');
+add_action('wp_head', 'solr_add_thickbox');
 
 /* NOTES
 * An alternative to adding the thickbox HTML around all links with the WordPress
 * filter is to use jQuery to find all images on the page, step up to it's parent
 * element which has to be an anchor tag, then we add a class of thickbox.
 */
-//if( !function_exists('add_thickbox_classes_js') ){
-//  function add_thickbox_classes_js() {
-//		$fcc_custom_js = 'jQuery(document).ready(function(){jQuery("img").parent("a").addClass("thickbox")});';
-//		echo '<script type="text/javascript">' . $fcc_custom_js . '</script>';
-//  }
-//}
-//add_action( 'wp_footer', 'add_thickbox_classes_js' ); // add the additional script to footer area
+if( !function_exists('add_thickbox_classes_js') ){
+  function add_thickbox_classes_js() {
+		$fcc_custom_js = 'jQuery(document).ready(function(){jQuery("img").parent("a").addClass("thickbox")});';
+		echo '<script type="text/javascript">' . $fcc_custom_js . '</script>';
+  }
+}
+add_action( 'wp_footer', 'add_thickbox_classes_js' ); // add the additional script to footer area
 
 /*
 Usage:
@@ -73,87 +73,94 @@ class solractivityfeedshortcode {
 		$html = '';
 
 		/***  JSON Loop Starts Here ***/
-			$html .= $tmp_global_before; # Keep
-			$default_avatar = get_option('default_avatar');
-			#JSON
-			$response = file_get_contents('http://avsearch.fccinteractive.com:8080/solr/select?indent=on&version=2.2&q=*%3A*&fq=blogid%3A%5B2+TO+*%5D&fq=publishtime%3A%5BNOW-7DAY+TO+NOW%5D&start=0&rows=1000&fl=id%2C+permalink%2C+blogid%2C+title%2C+author%2C+type%2C+publishtime%2C+categories&qt=&wt=json&sort=publishtime+desc&omitHeader=true');
-			$response = json_decode($response, true);
-			$docs = $response['response']['docs'];
 
-			for($i = 0; $i < count($docs); $i++){
+		$default_avatar = get_option('default_avatar');
+		#JSON
+		$response = file_get_contents('http://avsearch.fccinteractive.com:8080/solr/select?indent=on&version=2.2&q=*%3A*&fq=blogid%3A%5B2+TO+*%5D&fq=publishtime%3A%5BNOW-7DAY+TO+NOW%5D&fq=type%3Apost&start=0&rows=' . $tmp_number .'&fl=id%2C+permalink%2C+blogid%2C+title%2C+author%2C+type%2C+publishtime%2C+categories&qt=&wt=json&sort=publishtime+desc&omitHeader=true');
+		$response = json_decode($response, true);
+		$docs = $response['response']['docs'];
+		$totalposts = $response['response']['numFound'];
 
-				$obj = $docs[$i];
+		$html .= '<div class="relative" style="text-align: left;">' . 'Showing up to ' . $tmp_number . ' of ' . $totalposts .' posts since ' . date('m/d/Y', strtotime('-7 days')) . '</div>'; # Keep
+		$html .= $tmp_global_before; # Keep
 
-				$html .= $tmp_before; # Keep
-				if ( $tmp_title_characters > 0 ) {
-					$html .= $tmp_title_before; # Keep
+		for($i = 0; $i < count($docs); $i++){
 
-					#Article Title
-					$feed_title =$obj['title'];
-					#Article ID
-					$feed_id = preg_replace('/[^0-9]/','',$obj['id']);
-					#Article Blog ID
-					$feed_blogid = $obj['blogid'];
-					#Article Permalink
-					$feed_permalink = $obj['permalink'];
-					#Article Author
-					$feed_author = $obj['author'];
-					#Article Type
-					$feed_type = $obj['type'];
-					#Article Publish Time
-					$feed_publishtime = $obj['publishtime'];
-					#Article Category
-					$feed_category = $obj['categories'][0];
-					#Article Time
-					$post_time = gmdate( 'm/d/Y g:i a', strtotime($feed_publishtime));
+			$obj = $docs[$i];
 
-					# Featured Imaged
-					$featured_image = NULL;
-					switch_to_blog( $feed_blogid );
+			$html .= $tmp_before; # Keep
+			if ( $tmp_title_characters > 0 ) {
+				$html .= $tmp_title_before; # Keep
+
+				#Article Title
+				$feed_title =$obj['title'];
+				#Article ID
+				$feed_id = preg_replace('/[^0-9]/','',$obj['id']);
+				#Article Blog ID
+				$feed_blogid = $obj['blogid'];
+				#Article Permalink
+				$feed_permalink = $obj['permalink'];
+				#Article Author
+				$feed_author = $obj['author'];
+				#Article Type
+				$feed_type = $obj['type'];
+				#Article Publish Time
+				$feed_publishtime = $obj['publishtime'];
+				#Article Category
+				$feed_category = $obj['categories'][0];
+				#Article Time
+				$post_time = gmdate( 'm/d/Y g:i a', strtotime($feed_publishtime));
+
+				# Placeholder Image
+				$placeholder_image_url = ACTFEED__PLUGIN_DIR . 'placeholder.jpeg';
+				$placeholder_image = '<a href="' .$placeholder_image_url . '?TB_iframe=true" class="thickbox">' . '<img src="' . $placeholder_image_url . '">' . '</a>';
+
+				# Featured Image
+				$featured_image = NULL;
+				switch_to_blog( $feed_blogid );
 					$featured_image = get_the_post_thumbnail( $feed_id, 'small-thumb' );
-					restore_current_blog();
-					$placeholder_image = ACTFEED__PLUGIN_DIR . 'placeholder.jpeg';
-					$featured_image_url = '<img src="' . $featured_image . '">';
+					$post_thumbnail_url = wp_get_attachment_url( get_post_thumbnail_id($feed_id) );
+					$featured_image_with_url = '<a href="' . $post_thumbnail_url . '?TB_iframe=true" class="thickbox">' . $featured_image . '</a>';
+				restore_current_blog();
 
-
-					# Display Featured Image Thumbnail if available
-					if ( $featured_image ) {
-						$html .= '<div class="sidebar-list-img left relative">' . $featured_image_url . '</div>';
-					} else {
-						$html .= '<div class="sidebar-list-img left relative">' . $placeholder_image . '</div>';
-					}
-
-					# Title & Author
-					if ( $tmp_title_link == 'no' ) {
-						$html .= substr($feed_title,0,$tmp_title_characters);
-					}
-					else {
-						$html .= '<div class="sidebar-list-text left relative">';
-						$html .= '<a href="' . $permalink . '" target="_blank">' . substr($feed_title,0,$tmp_title_characters) . '</a>';
-					}
-
-					# Category & Post Time
-					$html .= '<div class="widget-post-info left">';
-					$html .= '<span class="widget-post-cat">' . $feed_category . '</span>';
-					$html .= '<span class="widget-post-date">' . $post_time . '</span>';
-					$html .= '<span class="widget-post-date">' . '<strong>' .  $feed_author . '</strong></span>';
-					$html .= '</div></div><br>';
-
-					$html .= $tmp_title_after;
+				# Display Featured Image Thumbnail if available
+				if ( $featured_image ) {
+					$html .= '<div class="sidebar-list-img left relative">' . $featured_image_with_url . '</div>';
+				} else {
+					$html .= '<div class="sidebar-list-img left relative">' . $placeholder_image . '</div>';
 				}
-				$html .= $tmp_title_content_divider;
 
-				# The Content (Not Needed Currently)
-				//if ( $tmp_content_characters > 0 ) {
-					//$the_content = network_get_the_content();
-					//$html .= substr(strip_tags($the_content),0,$tmp_content_characters) . '...';
-				//}
+				# Title & Author
+				if ( $tmp_title_link == 'no' ) {
+					$html .= substr($feed_title,0,$tmp_title_characters);
+				}
+				else {
+					$html .= '<div class="sidebar-list-text left relative">';
+					$html .= '<a href="' . $feed_permalink . '" target="_blank">' . substr($feed_title,0,$tmp_title_characters) . '</a>';
+				}
 
-				$html .= $tmp_title_content_divider;
+				# Category & Post Time
+				$html .= '<div class="widget-post-info left">';
+				$html .= '<span class="widget-post-cat">' . $feed_category . '</span>';
+				$html .= '<span class="widget-post-date">' . $post_time . '</span>';
+				$html .= '<span class="widget-post-date">' . '<strong>' .  $feed_author . '</strong></span>';
+				$html .= '</div></div><br>';
 
-				$html .= $tmp_after;
+				$html .= $tmp_title_after;
 			}
-			$html .= $tmp_global_after;
+			$html .= $tmp_title_content_divider;
+
+			# The Content (Not Needed Currently)
+			//if ( $tmp_content_characters > 0 ) {
+				//$the_content = network_get_the_content();
+				//$html .= substr(strip_tags($the_content),0,$tmp_content_characters) . '...';
+			//}
+
+			$html .= $tmp_title_content_divider;
+
+			$html .= $tmp_after;
+		}
+		$html .= $tmp_global_after;
 
 
 		if($output) {
