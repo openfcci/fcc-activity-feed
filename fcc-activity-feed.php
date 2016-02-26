@@ -4,7 +4,7 @@ Plugin Name: FCC Activity Feed
 Plugin URI:
 Description: Global Recent posts function and shortcode
 Author: Forum Communications Company
-Version: 0.16.02.18
+Version: 0.16.02.25
 Author URI: http://forumcomm.com/
 */
 
@@ -105,13 +105,13 @@ class solractivityfeedshortcode {
 					#Article Category
 					$feed_category = $obj['categories'][0];
 					#Article Time
-					$post_time = gmdate( 'm/d/Y g:i a', $feed_publishtime);
+					$post_time = gmdate( 'm/d/Y g:i a', strtotime($feed_publishtime));
 
 					# Featured Imaged
 					$featured_image = NULL;
-					/*switch_to_blog( $feed_blogid );
+					switch_to_blog( $feed_blogid );
 					$featured_image = get_the_post_thumbnail( $feed_id, 'small-thumb' );
-					restore_current_blog();*/
+					restore_current_blog();
 					$placeholder_image = ACTFEED__PLUGIN_DIR . 'placeholder.jpeg';
 					$featured_image_url = '<img src="' . $featured_image . '">';
 
