@@ -3,6 +3,9 @@ An activity feed for displaying global network posts.
 
 ## Roadmap
 
+- [ ] Migrate to elasticsearch-based feed
+- [ ] Photon Images
+  - Implement function for automatically populating and updating featured image photo image links into post meta to be indexed by elasticsearch for increasing load speed.
 - [ ] Async/ajax auto-update of feed triggered when new posts are indexed
   - Heartbeat API or elastic api query trigger
 - [ ] Add visual metrics
