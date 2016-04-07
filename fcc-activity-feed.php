@@ -11,10 +11,14 @@ Author URI: http://forumcomm.com/
 define( 'ACTFEED__PLUGIN_DIR',  plugin_dir_url( __FILE__ ) );
 
 function solr_add_thickbox() {
-	if ( ! is_admin() ) {
-		add_thickbox();
+	if ( ! is_admin() && ! is_home() ) {
+		$pagename = get_query_var('pagename');
+		if ( $pagename == 'activity' ){
+			// Add thickbox
+			add_thickbox();
+		}
 	} else {
-		//Admin
+		// Don't add thickbox
 	}
 }
 add_action('wp_head', 'solr_add_thickbox');
