@@ -66,8 +66,6 @@ class solractivityfeedshortcode {
 
 	function initialise_solractivityfeedshortcode() {
 		// In case we need it in future :)
-
-		# Say Anything Blog ID: 67725
 	}
 
 	function solr_display_recent_posts($tmp_number,$tmp_title_characters = 0,$tmp_content_characters = 0,$tmp_title_content_divider = '<br />',$tmp_title_before,$tmp_title_after,$tmp_global_before,$tmp_global_after,$tmp_before,$tmp_after,$tmp_title_link = 'no',$tmp_show_avatars = 'yes', $tmp_avatar_size = 16, $posttype = 'post', $output = true) {
@@ -101,7 +99,12 @@ class solractivityfeedshortcode {
 				#Article ID
 				$feed_id = preg_replace('/[^0-9]/','',$obj['id']);
 				#Article Blog ID
-				$feed_blogid = $obj['blogid'];
+				if ( $obj['blogid'] === '0') {
+					# Set SayAnythingBlog to correct blog_id
+					$feed_blogid = '67725';
+				} else {
+					$feed_blogid = $obj['blogid'];
+				}
 				#Article Permalink
 				$feed_permalink = $obj['permalink'];
 				#Article Author
