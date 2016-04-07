@@ -4,7 +4,7 @@ Plugin Name: FCC Activity Feed
 Plugin URI:
 Description: Global Recent posts function and shortcode
 Author: Forum Communications Company
-Version: 0.16.02.26.2
+Version: 0.16.04.07
 Author URI: http://forumcomm.com/
 */
 
@@ -66,6 +66,8 @@ class solractivityfeedshortcode {
 
 	function initialise_solractivityfeedshortcode() {
 		// In case we need it in future :)
+
+		# Say Anything Blog ID: 67725
 	}
 
 	function solr_display_recent_posts($tmp_number,$tmp_title_characters = 0,$tmp_content_characters = 0,$tmp_title_content_divider = '<br />',$tmp_title_before,$tmp_title_after,$tmp_global_before,$tmp_global_after,$tmp_before,$tmp_after,$tmp_title_link = 'no',$tmp_show_avatars = 'yes', $tmp_avatar_size = 16, $posttype = 'post', $output = true) {
@@ -76,12 +78,14 @@ class solractivityfeedshortcode {
 
 		$default_avatar = get_option('default_avatar');
 		#JSON
-		$response = file_get_contents('http://avsearch.fccinteractive.com:8080/solr/select?indent=on&version=2.2&q=*%3A*&fq=blogid%3A%5B2+TO+*%5D&fq=publishtime%3A%5BNOW-7DAY+TO+NOW%5D&fq=type%3Apost&start=0&rows=' . $tmp_number .'&fl=id%2C+permalink%2C+blogid%2C+title%2C+author%2C+type%2C+publishtime%2C+categories&qt=&wt=json&sort=publishtime+desc&omitHeader=true');
+		$response = file_get_contents('http://avsearch.fccinteractive.com:8080/solr/select?indent=on&version=2.2&q=*%3A*&fq=-blogid%3A1&fq=publishtime%3A%5BNOW-7DAY+TO+NOW%5D&fq=type%3Apost&start=0&rows=' . $tmp_number .'&fl=id%2C+permalink%2C+blogid%2C+title%2C+author%2C+type%2C+publishtime%2C+categories&qt=&wt=json&sort=publishtime+desc&omitHeader=true');
 		$response = json_decode($response, true);
 		$docs = $response['response']['docs'];
+		$returnedposts = count($docs);
 		$totalposts = $response['response']['numFound'];
 
-		$html .= '<div class="relative" style="text-align: left;">' . 'Showing up to ' . $tmp_number . ' of ' . $totalposts .' posts since ' . date('m/d/Y', strtotime('-7 days')) . '</div>'; # Keep
+
+		$html .= '<h3 class="foot-head">Latest Posts</h3><div class="relative" style="text-align: left;">' . 'Showing ' . $returnedposts . ' of ' . $totalposts .' posts published since ' . date('m/d/Y', strtotime('-7 days')) . '.</div>'; # Keep
 		$html .= $tmp_global_before; # Keep
 
 		for($i = 0; $i < count($docs); $i++){
@@ -111,6 +115,10 @@ class solractivityfeedshortcode {
 				#Article Time
 				$post_time = gmdate( 'm/d/Y g:i a', strtotime($feed_publishtime));
 
+				# Feed Site
+				//$feed_site = get_blog_details( $feed_id )->path;
+				$feed_site = preg_replace('/www\./','',preg_replace('/\/()\d+/','',$obj['id']));
+
 				# Placeholder Image
 				$placeholder_image_url = ACTFEED__PLUGIN_DIR . 'placeholder.jpeg';
 				$placeholder_image = '<a href="' .$placeholder_image_url . '?TB_iframe=true" class="thickbox">' . '<img src="' . $placeholder_image_url . '">' . '</a>';
@@ -130,13 +138,18 @@ class solractivityfeedshortcode {
 					$html .= '<div class="sidebar-list-img left relative">' . $placeholder_image . '</div>';
 				}
 
-				# Title & Author
+				# Title
 				if ( $tmp_title_link == 'no' ) {
 					$html .= substr($feed_title,0,$tmp_title_characters);
 				}
 				else {
-					$html .= '<div class="sidebar-list-text left relative">';
-					$html .= '<a href="' . $feed_permalink . '" target="_blank">' . substr($feed_title,0,$tmp_title_characters) . '</a>';
+					if ( ! $featured_image ) {
+						$html .= '<div class="sidebar-list-text left relative">';
+						$html .= '<a href="' . $feed_permalink . '" target="_blank" style="color: #888;">' . substr($feed_title,0,$tmp_title_characters) . '</a>';
+					} else {
+						$html .= '<div class="sidebar-list-text left relative">';
+						$html .= '<a href="' . $feed_permalink . '" target="_blank">' . substr($feed_title,0,$tmp_title_characters) . '</a>';
+					}
 				}
 
 				# Category & Post Time
@@ -144,6 +157,7 @@ class solractivityfeedshortcode {
 				$html .= '<span class="widget-post-cat">' . $feed_category . '</span>';
 				$html .= '<span class="widget-post-date">' . $post_time . '</span>';
 				$html .= '<span class="widget-post-date">' . '<strong>' .  $feed_author . '</strong></span>';
+				$html .= '<span class="widget-post-date">' .  $feed_site . '</span>';
 				$html .= '</div></div><br>';
 
 				$html .= $tmp_title_after;
