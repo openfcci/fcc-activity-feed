@@ -1,40 +1,27 @@
 <?php
 /*
 Plugin Name: FCC Activity Feed
-Plugin URI:
-Description: Global Recent posts function and shortcode
+Plugin URI: https://github.com/openfcci/fcc-activity-feed
+Description: An activity feed for displaying global network posts.
 Author: Forum Communications Company
-Version: 0.16.04.07
+Version: 1.16.04.08
 Author URI: http://forumcomm.com/
 */
 
 define( 'ACTFEED__PLUGIN_DIR',  plugin_dir_url( __FILE__ ) );
 
-function solr_add_thickbox() {
+function activityfeed_add_lightbox() {
 	if ( ! is_admin() && ! is_home() ) {
 		$pagename = get_query_var('pagename');
 		if ( $pagename == 'activity' ){
-			// Add thickbox
-			add_thickbox();
+			wp_enqueue_style(  'wp-featherlight', ACTFEED__PLUGIN_DIR . 'includes/wp-featherlight.min.css' );
+			wp_enqueue_script( 'wp-featherlight', ACTFEED__PLUGIN_DIR . 'includes/wpFeatherlight.pkgd.min.js' );
 		}
 	} else {
-		// Don't add thickbox
+		// Don't add lightbox
 	}
 }
-add_action('wp_head', 'solr_add_thickbox');
-
-/* NOTES
-* An alternative to adding the thickbox HTML around all links with the WordPress
-* filter is to use jQuery to find all images on the page, step up to it's parent
-* element which has to be an anchor tag, then we add a class of thickbox.
-*/
-if( !function_exists('add_thickbox_classes_js') ){
-  function add_thickbox_classes_js() {
-		$fcc_custom_js = 'jQuery(document).ready(function(){jQuery("img").parent("a").addClass("thickbox")});';
-		echo '<script type="text/javascript">' . $fcc_custom_js . '</script>';
-  }
-}
-add_action( 'wp_footer', 'add_thickbox_classes_js' ); // add the additional script to footer area
+add_action('wp_head', 'activityfeed_add_lightbox');
 
 /*
 Usage:
@@ -77,8 +64,8 @@ class solractivityfeedshortcode {
 		$html = '';
 
 		/***  JSON Loop Starts Here ***/
-
 		$default_avatar = get_option('default_avatar');
+
 		#JSON
 		$response = file_get_contents('http://avsearch.fccinteractive.com:8080/solr/select?indent=on&version=2.2&q=*%3A*&fq=-blogid%3A1&fq=publishtime%3A%5BNOW-7DAY+TO+NOW%5D&fq=type%3Apost&start=0&rows=' . $tmp_number .'&fl=id%2C+permalink%2C+blogid%2C+title%2C+author%2C+type%2C+publishtime%2C+categories&qt=&wt=json&sort=publishtime+desc&omitHeader=true');
 		$response = json_decode($response, true);
@@ -86,40 +73,39 @@ class solractivityfeedshortcode {
 		$returnedposts = count($docs);
 		$totalposts = $response['response']['numFound'];
 
-
-		$html .= '<h3 class="foot-head">Latest Posts</h3><div class="relative" style="text-align: left;">' . 'Showing ' . $returnedposts . ' of ' . $totalposts .' posts published since ' . date('m/d/Y', strtotime('-7 days')) . '.</div>'; # Keep
-		$html .= $tmp_global_before; # Keep
+		$html .= '<h3 class="foot-head">Latest Posts</h3><div class="relative" style="text-align: left;">' . 'Showing ' . $returnedposts . ' of ' . $totalposts .' posts published since ' . date('m/d/Y', strtotime('-7 days')) . '.</div>';
+		$html .= $tmp_global_before;
 
 		for($i = 0; $i < count($docs); $i++){
 
 			$obj = $docs[$i];
 
-			$html .= $tmp_before; # Keep
+			$html .= $tmp_before;
 			if ( $tmp_title_characters > 0 ) {
-				$html .= $tmp_title_before; # Keep
+				$html .= $tmp_title_before;
 
-				#Article Title
+				# Article Title
 				$feed_title =$obj['title'];
-				#Article ID
+				# Article ID
 				$feed_id = preg_replace('/[^0-9]/','',$obj['id']);
-				#Article Blog ID
+				# Article Blog ID
 				if ( $obj['blogid'] === '0') {
 					# Set SayAnythingBlog to correct blog_id
 					$feed_blogid = '67725';
 				} else {
 					$feed_blogid = $obj['blogid'];
 				}
-				#Article Permalink
+				# Article Permalink
 				$feed_permalink = $obj['permalink'];
-				#Article Author
+				# Article Author
 				$feed_author = $obj['author'];
-				#Article Type
+				# Article Type
 				$feed_type = $obj['type'];
-				#Article Publish Time
+				# Article Publish Time
 				$feed_publishtime = $obj['publishtime'];
-				#Article Category
+				# Article Category
 				$feed_category = $obj['categories'][0];
-				#Article Time
+				# Article Time
 				$post_time = gmdate( 'm/d/Y g:i a', strtotime($feed_publishtime));
 
 				# Feed Site
@@ -132,11 +118,30 @@ class solractivityfeedshortcode {
 
 				# Featured Image
 				$featured_image = NULL;
-				switch_to_blog( $feed_blogid );
+				if ( $obj['blogid'] === '0') {
+					switch ($feed_site) {
+					    case 'sayanythingblog.com':
+					        $featured_image = 'https://i0.wp.com/www.sayanythingblog.com/files/2016/04/sab-activityfeed.png?zoom=2&fit=95%2C35';
+					        break;
+					    case 'northlandoutdoors.com':
+					        $featured_image = 'https://i2.wp.com/www.northlandoutdoors.com/files/2015/12/cropped-Northland-Outdoors-Site-Icon.png?resize=95%2C35';
+					        break;
+					    case 'bakkentoday.com':
+					        $featured_image =  'https://i0.wp.com/bakkentoday.areavoices.com/wp-content/blogs.dir/67724/files/2016/03/cropped-Bakken-Today-Site-Icon.png?resize=95%2C35';
+					        break;
+					    default:
+					        $featured_image = $placeholder_image_url;
+					}
+
+					$post_thumbnail_url = $featured_image;
+					$featured_image_with_url = '<a href="' . $post_thumbnail_url . '">' . '<img src="' . $featured_image . '">' . '</a>';
+				} else {
+					switch_to_blog( $feed_blogid );
 					$featured_image = get_the_post_thumbnail( $feed_id, 'small-thumb' );
 					$post_thumbnail_url = wp_get_attachment_url( get_post_thumbnail_id($feed_id) );
 					$featured_image_with_url = '<a href="' . $post_thumbnail_url . '?TB_iframe=true" class="thickbox">' . $featured_image . '</a>';
-				restore_current_blog();
+					restore_current_blog();
+				}
 
 				# Display Featured Image Thumbnail if available
 				if ( $featured_image ) {
